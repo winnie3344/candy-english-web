@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+:root {
+  --color-primary: #FF6B6B;
+  --color-secondary: #4ECDC4;
+  --color-accent: #FFE66D;
+  --color-bg: #FFF9F0;
+  --color-text: #2D3436;
+  --color-text-light: #636E72;
+  --color-card: #FFFFFF;
+  --color-success: #00B894;
+  --color-warning: #FDCB6E;
+  --color-danger: #E17055;
+  --color-purple: #A29BFE;
+  --font-display: 'Nunito', sans-serif;
+  --font-body: 'Noto Sans SC', sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 3px;
+}
+
+/* Page transition */
+.page-enter-active,
+.page-leave-active {
+  transition: all 0.3s ease;
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateX(20px);
+}
+.page-leave-to {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
+/* Toast animation */
+@keyframes slideIn {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.toast-enter {
+  animation: slideIn 0.3s ease;
+}
+
+/* Floating animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Pulse glow */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 5px rgba(255, 107, 107, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(255, 107, 107, 0.6); }
+}
+.animate-pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* Card bounce */
+@keyframes cardBounce {
+  0% { transform: scale(0.95); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+.animate-card-bounce {
+  animation: cardBounce 0.4s ease;
+}
