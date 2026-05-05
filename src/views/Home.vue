@@ -41,7 +41,6 @@
     <!-- 快速入口 -->
     <div class="px-6 -mt-8 relative z-20">
       <div class="grid grid-cols-2 gap-4">
-        <!-- 闪卡 -->
         <button @click="goTo('/flashcard')" class="bg-white rounded-3xl p-5 shadow-lg active:scale-95 transition-transform">
           <div class="w-14 h-14 bg-gradient-to-br from-[#FF6B6B] to-[#FF8E8E] rounded-2xl flex items-center justify-center mb-3 shadow-md">
             <i class="fas fa-layer-group text-white text-xl"></i>
@@ -50,7 +49,6 @@
           <p class="text-[var(--color-text-light)] text-xs mt-1">艾宾浩斯记忆法</p>
         </button>
 
-        <!-- 磨耳朵 -->
         <button @click="goTo('/audio')" class="bg-white rounded-3xl p-5 shadow-lg active:scale-95 transition-transform">
           <div class="w-14 h-14 bg-gradient-to-br from-[#4ECDC4] to-[#44B5AD] rounded-2xl flex items-center justify-center mb-3 shadow-md">
             <i class="fas fa-headphones text-white text-xl"></i>
@@ -59,7 +57,6 @@
           <p class="text-[var(--color-text-light)] text-xs mt-1">听音乐学英语</p>
         </button>
 
-        <!-- 看视频 -->
         <button @click="goTo('/video')" class="bg-white rounded-3xl p-5 shadow-lg active:scale-95 transition-transform">
           <div class="w-14 h-14 bg-gradient-to-br from-[#FFE66D] to-[#FFD93D] rounded-2xl flex items-center justify-center mb-3 shadow-md">
             <i class="fas fa-play text-white text-xl"></i>
@@ -68,7 +65,6 @@
           <p class="text-[var(--color-text-light)] text-xs mt-1">看动画学英语</p>
         </button>
 
-        <!-- 看绘本 -->
         <button @click="goTo('/book')" class="bg-white rounded-3xl p-5 shadow-lg active:scale-95 transition-transform">
           <div class="w-14 h-14 bg-gradient-to-br from-[#A29BFE] to-[#6C5CE7] rounded-2xl flex items-center justify-center mb-3 shadow-md">
             <i class="fas fa-book-open text-white text-xl"></i>
@@ -122,58 +118,83 @@ const todayStats = ref({
 const weekData = ref([])
 
 const weekRange = computed(() => {
-  const now = new Date()
-  const dayOfWeek = now.getDay() || 7
-  const start = new Date(now)
-  start.setDate(now.getDate() - dayOfWeek + 1)
-  const end = new Date(start)
-  end.setDate(start.getDate() + 6)
-  return `${start.getMonth() + 1}/${start.getDate()} - ${end.getMonth() + 1}/${end.getDate()}`
+  try {
+    const now = new Date()
+    const dayOfWeek = now.getDay() || 7
+    const start = new Date(now)
+    start.setDate(now.getDate() - dayOfWeek + 1)
+    const end = new Date(start)
+    end.setDate(start.getDate() + 6)
+    return `${start.getMonth() + 1}/${start.getDate()} - ${end.getMonth() + 1}/${end.getDate()}`
+  } catch (e) {
+    return ''
+  }
 })
 
-onMounted(() => {
-  // 加载今日统计
-  const records = JSON.parse(localStorage.getItem('candy_records') || '[]')
-  const today = new Date().toDateString()
-  const todayRecords = records.filter(r => new Date(r.recorded_at).toDateString() === today)
-  
-  todayStats.value.words = todayRecords.filter(r => r.type === 'flashcard').length
-  todayStats.value.minutes = Math.round(todayRecords.reduce((sum, r) => sum + (r.duration || 0), 0) / 60)
-  
-  // 计算连续天数
-  let streak = 0
-  const checkDate = new Date()
-  while (true) {
-    const dateStr = checkDate.toDateString()
-    const hasRecord = records.some(r => new Date(r.recorded_at).toDateString() === dateStr)
-    if (hasRecord || streak === 0) {
-      if (hasRecord) streak++
-      checkDate.setDate(checkDate.getDate() - 1)
-      if (!hasRecord && streak > 0) break
-    } else {
-      break
-    }
+function safeParse(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || '[]')
+  } catch (e) {
+    return []
   }
-  todayStats.value.streak = streak || 1
+}
 
-  // 加载周数据
-  const days = ['一', '二', '三', '四', '五', '六', '日']
-  const currentDayOfWeek = new Date().getDay() || 7
-  const maxMinutes = 30
-  
-  weekData.value = days.map((label, i) => {
-    const dayNum = i + 1
-    const date = new Date()
-    date.setDate(date.getDate() - (currentDayOfWeek - dayNum))
-    const dateStr = date.toDateString()
-    const dayRecords = records.filter(r => new Date(r.recorded_at).toDateString() === dateStr)
-    const minutes = Math.round(dayRecords.reduce((sum, r) => sum + (r.duration || 0), 0) / 60)
+onMounted(() => {
+  try {
+    const records = safeParse('candy_records')
+    const today = new Date().toDateString()
+    const todayRecords = records.filter(r => {
+      try { return new Date(r.recorded_at).toDateString() === today } catch { return false }
+    })
     
-    return {
-      label,
-      height: Math.min(Math.max(minutes / maxMinutes * 100, 8), 100),
-      today: dayNum === currentDayOfWeek
+    todayStats.value.words = todayRecords.filter(r => r.type === 'flashcard').length
+    todayStats.value.minutes = Math.round(todayRecords.reduce((sum, r) => sum + (r.duration || 0), 0) / 60)
+    
+    // 计算连续天数（限制最多查30天）
+    let streak = 0
+    const checkDate = new Date()
+    const maxCheck = 30
+    let checkCount = 0
+    while (checkCount < maxCheck) {
+      checkCount++
+      const dateStr = checkDate.toDateString()
+      const hasRecord = records.some(r => {
+        try { return new Date(r.recorded_at).toDateString() === dateStr } catch { return false }
+      })
+      if (hasRecord) {
+        streak++
+        checkDate.setDate(checkDate.getDate() - 1)
+      } else if (streak > 0) {
+        break
+      } else {
+        checkDate.setDate(checkDate.getDate() - 1)
+      }
     }
-  })
+    todayStats.value.streak = streak || 1
+
+    // 加载周数据
+    const days = ['一', '二', '三', '四', '五', '六', '日']
+    const currentDayOfWeek = new Date().getDay() || 7
+    const maxMinutes = 30
+    
+    weekData.value = days.map((label, i) => {
+      const dayNum = i + 1
+      const date = new Date()
+      date.setDate(date.getDate() - (currentDayOfWeek - dayNum))
+      const dateStr = date.toDateString()
+      const dayRecords = records.filter(r => {
+        try { return new Date(r.recorded_at).toDateString() === dateStr } catch { return false }
+      })
+      const minutes = Math.round(dayRecords.reduce((sum, r) => sum + (r.duration || 0), 0) / 60)
+      
+      return {
+        label,
+        height: Math.min(Math.max(minutes / maxMinutes * 100, 8), 100),
+        today: dayNum === currentDayOfWeek
+      }
+    })
+  } catch (e) {
+    console.error('Home load error:', e)
+  }
 })
 </script>
